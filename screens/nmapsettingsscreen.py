@@ -113,6 +113,13 @@ class NmapSettingsScreen(Screen):
                         yield RadioButton("FTP bounce scan", id="ftp-bounce-scan") # -b
                 yield Input(id="zombie-host", placeholder="Zombie host")
                 yield Input(id="ftp-bounce-input", placeholder="username:password@server:port")
+
+
+        with Container(classes="small-box"):
+            yield Label("UDP Scan")
+            with Vertical():
+                yield Label("Enable UDP Scan")
+                yield Switch(animate=True, id="udp-scan") # -sU
         
         with Container(classes="medium-box"):
             yield Label("Version Detection")
