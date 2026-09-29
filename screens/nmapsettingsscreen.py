@@ -1,4 +1,4 @@
-from textual.widgets import Input, Button, Footer, Label, Pretty, RadioButton, RadioSet, Checkbox, Switch
+from textual.widgets import Input, Button, Footer, Label, Pretty, RadioButton, RadioSet, Checkbox, Switch, TextArea
 from textual.screen import Screen
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical, HorizontalGroup, VerticalGroup, Container
@@ -151,6 +151,9 @@ class NmapSettingsScreen(Screen):
                         yield RadioButton("Output in all three formats")
 
         yield Button("Run nmap", id="run-button")
+
+        yield TextArea.code_editor("", language="bash", read_only=True, id="display")
+
         yield Footer()
 
 
@@ -187,12 +190,18 @@ class NmapSettingsScreen(Screen):
         self.query_one("#ftp-bounce-input").display = show
 
 
+    @on(Button.Pressed, "#run-button")
+    async def nmap_run(self, event: Button.Pressed) -> None:
+        self.run_command()
+
+
     # TODO
     # Implement run_command takes the states of all the widgets and
     # constructs a nmap command and runs it with subprocess and shows the progress of it 
     @work(exclusive=True)
     async def run_command(self):
-        pass
+        output_text = subprocess.check_output(["nmap", "-sV", "scanme.nmap.org"])
+        self.query_one("#display").insert(text=output_text)
 
 
 def is_ip(value: str) -> bool:
