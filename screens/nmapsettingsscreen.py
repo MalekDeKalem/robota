@@ -7,8 +7,42 @@ from textual import on
 from textual import work
 from textual.reactive import reactive
 from widgets.range import Range
-import subprocess
+from textual.worker import Worker
+import asyncio
 import re
+
+
+
+
+class CommandDisplay(TextArea):
+
+   # command_res: reactive[str] = reactive("")
+
+
+
+    def on_mount(self):
+        self.read_only = True
+        self.text = "INITIAL_TEXT"
+
+        
+    @work(exclusive=True)
+    async def run_command(self, cmd = "nmap -sV 45.33.32.156"):
+        proc = await asyncio.create_subprocess_exec("ls", "-lha", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout_text, stderr_text = await proc.communicate()
+
+        if proc.returncode!= 0:
+            return stderr_text.decode()
+        
+        return stdout_text.decode()
+
+    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        if event.state.name == "SUCCESS":
+            res = event.worker.result
+            #self.command_res = res
+            self.text = res
+            self.app.notify(res)
+
+
 
 class NmapSettingsScreen(Screen):
 
@@ -31,6 +65,12 @@ class NmapSettingsScreen(Screen):
         Screen {
             layout: vertical;
         }
+
+        CommandDisplay {
+            width: 100%;
+            height: 1fr;
+            border: double red;
+        }        
 
         .great-box {
             height: 20;
@@ -152,7 +192,7 @@ class NmapSettingsScreen(Screen):
 
         yield Button("Run nmap", id="run-button")
 
-        yield TextArea.code_editor("", language="bash", read_only=True, id="display")
+        yield CommandDisplay(id="display", name="Nmap Output")
 
         yield Footer()
 
@@ -192,16 +232,8 @@ class NmapSettingsScreen(Screen):
 
     @on(Button.Pressed, "#run-button")
     async def nmap_run(self, event: Button.Pressed) -> None:
-        self.run_command()
-
-
-    # TODO
-    # Implement run_command takes the states of all the widgets and
-    # constructs a nmap command and runs it with subprocess and shows the progress of it 
-    @work(exclusive=True)
-    async def run_command(self):
-        output_text = subprocess.check_output(["nmap", "-sV", "scanme.nmap.org"])
-        self.query_one("#display").insert(text=output_text)
+        cmd_display = self.query_one(CommandDisplay)
+        cmd_display.run_command()
 
 
 def is_ip(value: str) -> bool:
